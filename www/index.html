@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#080c18">
+  <title>Holy Vibe</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Cinzel:wght@400;500&family=Nunito:wght@300;400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .day-btn {
+      padding: 7px 11px; border-radius: 8px; font-size: 12px; cursor: pointer;
+      border: 1px solid rgba(255,255,255,.15); color: rgba(255,255,255,.5);
+      background: rgba(255,255,255,.05); user-select: none;
+    }
+    .day-btn.active {
+      border-color: rgba(201,168,76,.6); color: #c9a84c;
+      background: rgba(201,168,76,.15);
+    }
+    .alarm-item {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,.06);
+    }
+    .alarm-item:last-child { border-bottom: none; }
+    .alarm-time { font-size: 26px; color: #f0e8d5; font-family: 'Cormorant Garamond', serif; }
+    .alarm-meta { font-size: 11px; color: rgba(255,255,255,.4); margin-top: 2px; }
+    .alarm-label { font-size: 13px; color: rgba(255,255,255,.7); margin-top: 1px; }
+    .alarm-del { color: rgba(255,80,80,.6); font-size: 18px; padding: 6px; cursor: pointer; }
+    .alarm-toggle { transform: scale(0.85); }
+
+    /* ═══════════════════════════════════════════════════════
+       СТАРТОВИЙ ЕКРАН (SPLASH) — показується одразу при
+       відкритті index.html, поки завантажуються verses.json
+       і мовний файл. Прибирається через hideSplash() (див.
+       <script> нижче), яку викликає i18n.js по завершенню
+       loadLanguage(). Без цього першу мить (особливо на
+       повільному з'єднанні чи при першому запуску) користувач
+       бачив би порожній/чорний екран і міг подумати, що
+       застосунок завис чи зламався.
+       ═══════════════════════════════════════════════════════ */
+    #splashScreen {
+      position: fixed; inset: 0; z-index: 9999;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      background: #080c18;
+      transition: opacity .5s ease;
+    }
+    #splashScreen.hide { opacity: 0; pointer-events: none; }
+
+    .splash-cross {
+      position: relative; width: 44px; height: 44px; margin-bottom: 20px;
+      animation: splashPulse 1.8s ease-in-out infinite;
+    }
+    .splash-cross-v, .splash-cross-h {
+      position: absolute; background: #c9a84c; border-radius: 2px;
+    }
+    .splash-cross-v { left: 50%; top: 0; width: 6px; height: 44px; margin-left: -3px; }
+    .splash-cross-h { top: 30%; left: 0; width: 44px; height: 6px; margin-top: -3px; }
+    @keyframes splashPulse {
+      0%, 100% { opacity: .55; transform: scale(.94); }
+      50%      { opacity: 1;   transform: scale(1.05); }
+    }
+
+    .splash-title {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 21px; letter-spacing: 4px; color: #f0e8d5;
+      text-transform: uppercase; margin-bottom: 16px;
+    }
+
+    .splash-dots { display: flex; gap: 6px; }
+    .splash-dots span {
+      width: 6px; height: 6px; border-radius: 50%; background: rgba(201,168,76,.65);
+      animation: splashDot 1.2s ease-in-out infinite;
+    }
+    .splash-dots span:nth-child(2) { animation-delay: .15s; }
+    .splash-dots span:nth-child(3) { animation-delay: .3s; }
+    @keyframes splashDot {
+      0%, 80%, 100% { opacity: .25; transform: translateY(0); }
+      40%           { opacity: 1;   transform: translateY(-4px); }
+    }
+  </style>
+</head>
+<body>
+
+  <div id="bg"></div>
+
+  <!-- СТАРТОВИЙ ЕКРАН — див. пояснення в CSS-блоці "СТАРТОВИЙ ЕКРАН (SPLASH)" у <head> -->
+  <div id="splashScreen">
+    <div class="splash-cross">
+      <div class="splash-cross-v"></div>
+      <div class="splash-cross-h"></div>
+    </div>
+    <div class="splash-title">Holy Vibe</div>
+    <div class="splash-dots"><span></span><span></span><span></span></div>
+  </div>
+
+  <div id="app">
+
+    <div class="screen active" id="screenMain">
+      <div class="safe-top"></div>
+
+      <div class="cat-toggle-wrap">
+        <button class="cat-toggle-btn" id="catToggleBtn" data-i18n-title="title_categories" title="Категорії">
+          <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+            <path d="M1.5 3.5h12M1.5 7.5h8M1.5 11.5h5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+          </svg>
+          <span id="catToggleLabel">Усі</span>
+          <svg class="cat-toggle-arrow" width="10" height="10" viewBox="0 0 10 10" fill="none">
+            <path d="M2 3.5l3 3 3-3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+
+        <!-- ПОШУК: кнопка (можна видалити разом з #searchOverlay — див. коментар нижче в тілі сторінки) -->
+        <button class="search-toggle-btn" id="searchToggleBtn" title="Пошук">
+          <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+            <circle cx="6.2" cy="6.2" r="4.7" stroke="currentColor" stroke-width="1.4"/>
+            <path d="M13 13l-3.2-3.2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+          </svg>
+        </button>
+      </div>
+      
+      <!-- Пілюлі категорій — генеруються динамічно з verses.json (_categories) -->
+      <div class="cat-bar" id="catBar" style="display:none">
+        <div class="pill active" data-cat="all" data-i18n="cat_all">Усі</div>
+      </div>
+
+      <div class="verse-wrap" id="verseWrap">
+        <div class="verse-card" id="verseCard">
+          <!-- ЗАВАНТАЖЕННЯ: індикатор, поки вірші вантажаться вперше. Можна видалити цей div + CSS-блок "ЗАВАНТАЖЕННЯ" у styles.css + рядок з $('verseLoading') в app.js -->
+          <div class="verse-loading" id="verseLoading"><span></span><span></span><span></span></div>
+          <div class="verse-text" id="verseText"></div>
+          <div class="verse-ref t-ui" id="verseRef"></div>
+        </div>
+        <div id="heartBurst">🤍</div>
+        <div class="swipe-hint">
+          <div class="swipe-hint-line"></div>
+          <div class="swipe-hint-text" data-i18n="swipe_hint">свайп вгору</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="screen" id="screenFav">
+      <div class="safe-top"></div>
+      <div class="screen-header">
+        <div class="t-label" style="font-size:clamp(12px,3vw,15px)" data-i18n="favs_title">Улюблені вірші</div>
+      </div>
+      <div class="fav-list" id="favList"></div>
+    </div>
+
+    <div class="screen" id="screenMenu">
+      <div class="safe-top"></div>
+      <div class="menu-logo-block">
+        <div class="menu-logo" data-i18n="menu_logo">СЛОВО</div>
+        <div class="menu-tagline" data-i18n="menu_tagline">Просочення Живим Словом</div>
+      </div>
+
+      <div class="card music-block">
+        <div class="music-title" data-i18n="music_title">🎵 Молитовна музика (CC)</div>
+        <div class="player-controls">
+          <div class="player-btn skip" id="btnPrevTrack" data-i18n-title="title_prev" title="Попередній трек">⏮</div>
+          <div class="player-btn" id="btnRepeatMode" data-i18n-title="title_repeat" title="Режим повтору">🔂</div>
+          <div class="player-btn" id="btnShuffle" data-i18n-title="title_shuffle" title="Перемішати">🔀</div>
+          <div class="player-btn skip" id="btnNextTrack" data-i18n-title="title_next" title="Наступний трек">⏭</div>
+        </div>
+        <div id="trackList"></div>
+      </div>
+
+      <div class="menu-divider"></div>
+
+      <div class="menu-section">
+        <div class="menu-row" onclick="toggleDonateSpoiler()" style="color:rgba(201,168,76,.8); cursor: pointer; display: flex; justify-content: space-between; align-items: center; padding: 4px 0;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <path d="M10 17c-4-3.5-7-6.5-7-9.5a5 5 0 0 1 7-4.6A5 5 0 0 1 17 7.5c0 3-3 6-7 9.5z" stroke="#c9a84c" stroke-width="1.3"/>
+            </svg>
+            <span data-i18n="donate_title">Підтримати проєкт ❤️</span>
+          </div>
+          <span id="donateArrow" style="transition: transform 0.3s ease; font-size: 12px; color: rgba(201,168,76,.5);">▼</span>
+        </div>
+
+        <div id="donateSpoiler" style="display: none; margin-top: 15px; transition: all 0.3s ease;">
+          <a href="https://www.paypal.com/donate/?hosted_button_id=PFLMN9VTMCPDY" target="_blank" class="menu-item" style="text-decoration: none; display: block; background: #0070ba; color: #ffffff; text-align: center; font-weight: bold; border-radius: 8px; padding: 12px; margin-bottom: 12px; font-size: 14px;">
+            Support via PayPal (Worldwide) 🌐
+          </a>
+
+          <div style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 8px; padding: 12px; text-align: center;">
+            <div style="font-size: 13px; color: rgba(255,255,255,0.5); margin-bottom: 5px;" data-i18n="donate_privat">Картка Ощадбанк:</div>
+            <div style="font-size: 17px; font-weight: bold; color: #ffffff; letter-spacing: 1px; margin-bottom: 10px;">
+              4483 8200 4718 1796
+            </div>
+            <button onclick="navigator.clipboard.writeText('4483820047181796'); alert(window._currentUI?.donate_copy_alert || 'Номер картки скопійовано! 👍')" style="background: #70A400; color: white; border: none; width: 100%; padding: 10px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 14px;">
+              <span data-i18n="donate_copy">Скопіювати картку 🟢</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══════════════════════════════════════════════════════════
+           ℹ️ ПРО ПЕРЕКЛАДИ / АВТОРСЬКІ ПРАВА
+           Тут вручну (прямо в цьому HTML) додаєш/оновлюєш інформацію
+           про те, які мовні переклади Біблії використовуються в
+           застосунку і на яких підставах (з дозволу правовласника,
+           публічне надбання, власний переклад тощо).
+
+           ЯК ДОДАТИ НОВУ МОВУ СЮДИ:
+           Скопіюй один блок <div class="about-lang-item">...</div>
+           нижче і зміни в ньому назву мови/модуля та текст дозволу.
+           Ніякого зв'язку з i18n.js/SUPPORTED_LANGUAGES це не має —
+           це суто інформаційний текст для користувача, редагується
+           вручну, коли отримуєш новий дозвіл.
+           ═══════════════════════════════════════════════════════════ -->
+      <div class="menu-section">
+        <div class="menu-row" onclick="toggleAboutSpoiler()" style="color:rgba(201,168,76,.8); cursor: pointer; display: flex; justify-content: space-between; align-items: center; padding: 4px 0;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <circle cx="10" cy="10" r="8" stroke="#c9a84c" stroke-width="1.3"/>
+              <path d="M10 9v5" stroke="#c9a84c" stroke-width="1.3" stroke-linecap="round"/>
+              <circle cx="10" cy="6.3" r="0.9" fill="#c9a84c"/>
+            </svg>
+            <span data-i18n="about_title">Про переклади</span>
+          </div>
+          <span id="aboutArrow" style="transition: transform 0.3s ease; font-size: 12px; color: rgba(201,168,76,.5);">▼</span>
+        </div>
+
+        <div id="aboutSpoiler" style="display: none; margin-top: 15px; transition: all 0.3s ease;">
+
+          <!-- ─── ШАБЛОН ОДНОГО ЗАПИСУ (копіюй цей блок для кожної мови) ─── -->
+          <div class="about-lang-item" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 12px; margin-bottom: 10px;">
+            <div style="font-size: 14px; font-weight: bold; color: #f0e8d5; margin-bottom: 4px;">
+              🇬🇧 English — Berean Standard Bible (BSB)
+            </div>
+            <div style="font-size: 12.5px; line-height: 1.5; color: rgba(255,255,255,0.55);">
+              Публічне надбання (Public Domain), офіційний текстовий модуль. Використовується без обмежень.
+            </div>
+          </div>
+
+          <div class="about-lang-item" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 12px; margin-bottom: 10px;">
+            <div style="font-size: 14px; font-weight: bold; color: #f0e8d5; margin-bottom: 4px;">
+              🇺🇦 Українська — переклад І. Огієнка
+            </div>
+            <div style="font-size: 12.5px; line-height: 1.5; color: rgba(255,255,255,0.55);">
+              Використовується з дозволу правовласника.
+            </div>
+          </div>
+          <!-- ─── /ШАБЛОН — далі додавай нові мови копією блока вище ─── -->
+
+        </div>
+      </div>
+
+      <div style="height:16px"></div>
+    </div>
+
+    <div class="screen" id="screenSettings">
+      <div class="safe-top"></div>
+      <div class="screen-header">
+        <div class="t-label" style="font-size:clamp(12px,3vw,15px)" data-i18n="settings_title">Оформлення</div>
+      </div>
+
+      <div class="card settings-block" id="langBlock">
+        <div class="settings-block-title" data-i18n="settings_lang">🌐 Мова</div>
+        <div style="position:relative">
+          <select id="langSelect" style="
+            width:100%; padding:11px 14px; border-radius:10px;
+            background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12);
+            color:#f0e8d5; font-size:15px; font-family:'Nunito',sans-serif;
+            appearance:none; -webkit-appearance:none; cursor:pointer;
+            background-image: url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2212%22 height=%228%22 viewBox=%220 0 12 8%22><path d=%22M1 1l5 5 5-5%22 stroke=%22%23c9a84c%22 stroke-width=%221.5%22 fill=%22none%22 stroke-linecap=%22round%22/></svg>');
+            background-repeat:no-repeat; background-position:right 14px center;">
+            <!-- Опції генеруються динамічно в i18n.js (buildLanguageSelector) —
+                 з масиву SUPPORTED_LANGUAGES, лише enabled: true. Тут нічого
+                 вручну дописувати не треба. -->
+          </select>
+        </div>
+      </div>
+
+      <div class="card settings-block">
+        <div class="settings-block-title" data-i18n="settings_font">Шрифт</div>
+        <div class="font-options">
+          <div class="font-opt active" data-font="cormorant" style="font-family:'Cormorant Garamond',serif">Аа<span data-i18n="settings_font_classic">Класика</span></div>
+          <div class="font-opt" data-font="georgia" style="font-family:Georgia,serif">Аа<span data-i18n="settings_font_tradition">Традиція</span></div>
+          <div class="font-opt" data-font="nunito" style="font-family:'Nunito',sans-serif">Аа<span data-i18n="settings_font_modern">Сучасний</span></div>
+        </div>
+      </div>
+
+      <div class="card settings-block">
+        <div class="settings-block-title" data-i18n="settings_size">Розмір тексту</div>
+        <div class="vol-row">
+          <span class="vol-label t-ui" style="font-size:10px">А — А</span>
+          <input type="range" id="fontSizeSlider" min="0" max="100" value="50">
+        </div>
+      </div>
+
+      <div class="card settings-block">
+        <div class="settings-block-title" data-i18n="settings_icon_size">Розмір іконок і навігації</div>
+        <div class="vol-row">
+          <span class="vol-label t-ui" style="font-size:10px">⊙ — ⊙</span>
+          <input type="range" id="iconSizeSlider" min="0" max="100" value="50">
+        </div>
+      </div>
+
+      <div class="card settings-block">
+        <div class="settings-block-title" data-i18n="settings_color">Колір тексту</div>
+        <div class="color-row">
+          <div class="color-dot active" data-color="#f0e8d5" style="background:#f0e8d5"></div>
+          <div class="color-dot" data-color="#ffffff"  style="background:#fff"></div>
+          <div class="color-dot" data-color="#e8d08a"  style="background:#e8d08a"></div>
+          <div class="color-dot" data-color="#b8d4f0"  style="background:#b8d4f0"></div>
+          <div class="color-dot" data-color="#d4e8c8"  style="background:#d4e8c8"></div>
+          <div class="color-dot" data-color="#111111"  style="background:#111;border:1px solid rgba(255,255,255,.2)" title="Чорний"></div>
+          <div class="color-dot" data-color="#1a1a2e"  style="background:#1a1a2e;border:1px solid rgba(255,255,255,.2)" title="Нічний синій"></div>
+          <div class="color-dot" data-color="#3d2010"  style="background:#3d2010;border:1px solid rgba(255,255,255,.2)" title="Темно-коричневий"></div>
+        </div>
+      </div>
+
+      <div class="card settings-block">
+        <div class="settings-block-title" data-i18n="settings_bg">Фон</div>
+        <div class="bg-grid" id="bgGrid"></div>
+      </div>
+
+      <div class="card settings-block">
+        <div class="settings-block-title" data-i18n="settings_extra">Додатково</div>
+        <div class="toggle-row"><span data-i18n="toggle_shadow">Тінь тексту</span><div class="toggle on" id="tglShadow"></div></div>
+        <div class="toggle-row" style="display:none"><span data-i18n="toggle_anim">Анімація переходу</span><div class="toggle" id="tglAnim"></div></div>
+        <div class="toggle-row"><span data-i18n="toggle_autobg">Фон змінюється з віршем</span><div class="toggle" id="tglAutoBg"></div></div>
+        <div class="toggle-row"><span data-i18n="toggle_glass">✦ Скляний стиль</span><div class="toggle" id="tglGlass"></div></div>
+      </div>
+      
+     <!-- TODO: notifications frozen until v1.1 — hidden from UI, do not remove markup -->
+      <div class="card settings-block" id="notifBlock" style="display:none">
+        <div class="settings-block-title" data-i18n="notif_title">🔔 Нагадування для молитви</div>
+
+        <div id="alarmList" style="margin-bottom:12px"></div>
+
+        <button id="btnAddAlarm" style="
+          width:100%; padding:11px; border:1px dashed rgba(201,168,76,.4);
+          background:rgba(201,168,76,.07); color:var(--clr-gold-lt);
+          border-radius:10px; font-size:14px; cursor:pointer; letter-spacing:.5px;">
+          <span data-i18n="notif_add">+ Додати нагадування</span>
+        </button>
+      </div>
+      
+      <!-- Модалка редагування будильника -->
+      <div id="alarmModal" style="display:none; position:fixed; inset:0; z-index:999;
+           background:rgba(0,0,0,.7); align-items:center; justify-content:center;">
+        <div style="background:#111827; border:1px solid rgba(201,168,76,.25); border-radius:16px;
+             padding:24px; width:min(340px,90vw); max-height:85vh; overflow-y:auto;">
+          <div style="font-size:15px; color:var(--clr-gold-lt); margin-bottom:18px; text-align:center;">
+            <span data-i18n="alarm_modal_title">Налаштування нагадування</span>
+          </div>
+
+          <div style="margin-bottom:14px">
+            <div style="font-size:11px; color:rgba(255,255,255,.45); margin-bottom:6px;" data-i18n="alarm_name">Назва</div>
+            <input id="alarmLabel" type="text" placeholder="Ранкова молитва" data-i18n-placeholder="alarm_label_ph" maxlength="40" style="
+              width:100%; padding:10px 12px; background:rgba(255,255,255,.06);
+              border:1px solid rgba(255,255,255,.12); border-radius:8px;
+              color:#fff; font-size:14px; box-sizing:border-box;">
+          </div>
+
+          <div style="margin-bottom:14px">
+            <div style="font-size:11px; color:rgba(255,255,255,.45); margin-bottom:6px;" data-i18n="alarm_time">Час</div>
+            <input id="alarmTime" type="time" style="
+              width:100%; padding:10px 12px; background:rgba(255,255,255,.06);
+              border:1px solid rgba(255,255,255,.12); border-radius:8px;
+              color:#fff; font-size:18px; box-sizing:border-box;">
+          </div>
+
+          <div style="margin-bottom:18px">
+            <div style="font-size:11px; color:rgba(255,255,255,.45); margin-bottom:8px;" data-i18n="alarm_days">Дні тижня</div>
+            <div id="dayPicker" style="display:flex; gap:6px; justify-content:center; flex-wrap:wrap">
+              <div class="day-btn active" data-day="-1" data-i18n="alarm_once">Один раз</div>
+              <div class="day-btn" data-day="0" data-i18n="alarm_daily">Щодня</div>
+              <div class="day-btn" data-day="1" data-i18n="day_mon">Пн</div>
+              <div class="day-btn" data-day="2" data-i18n="day_tue">Вт</div>
+              <div class="day-btn" data-day="3" data-i18n="day_wed">Ср</div>
+              <div class="day-btn" data-day="4" data-i18n="day_thu">Чт</div>
+              <div class="day-btn" data-day="5" data-i18n="day_fri">Пт</div>
+              <div class="day-btn" data-day="6" data-i18n="day_sat">Сб</div>
+              <div class="day-btn" data-day="7" data-i18n="day_sun">Нд</div>
+            </div>
+          </div>
+
+          <div style="display:flex; gap:10px">
+            <button id="btnAlarmCancel" style="flex:1; padding:11px; background:rgba(255,255,255,.06);
+              border:1px solid rgba(255,255,255,.12); border-radius:10px; color:rgba(255,255,255,.6);
+              font-size:14px; cursor:pointer;"><span data-i18n="alarm_cancel">Скасувати</span></button>
+            <button id="btnAlarmSave" style="flex:2; padding:11px; background:rgba(201,168,76,.2);
+              border:1px solid rgba(201,168,76,.4); border-radius:10px; color:var(--clr-gold-lt);
+              font-size:14px; cursor:pointer; font-weight:600;"><span data-i18n="alarm_save">Зберегти 🔔</span></button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <nav class="bottom-nav">
+      <button class="nav-btn active" data-screen="screenMain">
+        <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M11 3l1.5 4.5h4.7l-3.8 2.8 1.5 4.5L11 12l-3.9 2.8 1.5-4.5L4.8 7.5h4.7z" stroke="#f0e8d5" stroke-width="1.3" stroke-linejoin="round"/></svg>
+        <span class="nav-label" data-i18n="nav_word">Слово</span>
+      </button>
+      <button class="nav-btn" data-screen="screenFav">
+        <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M11 18C7 15 3 11.5 3 8a4.5 4.5 0 0 1 8-2.8A4.5 4.5 0 0 1 19 8c0 3.5-4 7-8 10z" stroke="#f0e8d5" stroke-width="1.3"/></svg>
+        <span class="nav-label" data-i18n="nav_favs">Улюблені</span>
+      </button>
+      <button class="nav-btn" data-screen="screenMenu">
+        <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M3 6h16M3 11h11M3 16h7" stroke="#f0e8d5" stroke-width="1.3" stroke-linecap="round"/></svg>
+        <span class="nav-label" data-i18n="nav_menu">Меню</span>
+      </button>
+      <button class="nav-btn" data-screen="screenSettings">
+        <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="11" r="3" stroke="#f0e8d5" stroke-width="1.3"/><path d="M11 2v2M11 18v2M2 11h2M18 11h2M4.9 4.9l1.4 1.4M15.7 15.7l1.4 1.4M4.9 17.1l1.4-1.4M15.7 6.3l1.4-1.4" stroke="#f0e8d5" stroke-width="1.3" stroke-linecap="round"/></svg>
+        <span class="nav-label" data-i18n="nav_settings">Вигляд</span>
+      </button>
+    </nav>
+
+  </div>
+
+  <div class="sheet-overlay" id="sheetOverlay"></div>
+  <div class="bottom-sheet" id="bottomSheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-section-title" data-i18n="sheet_title">Цей вірш</div>
+    <div class="sheet-verse-preview" id="sheetPreview"></div>
+    <div class="sheet-actions">
+      <div class="sheet-btn" id="btnAI">
+        <div class="sheet-btn-ico">
+          <svg width="17" height="17" viewBox="0 0 17 17" fill="none"><circle cx="8.5" cy="8.5" r="6.5" stroke="#c9a84c" stroke-width="1.2"/><path d="M6.5 6.5a2 2 0 1 1 2.5 1.9v1.1" stroke="#c9a84c" stroke-width="1.2" stroke-linecap="round"/><circle cx="8.5" cy="12" r=".6" fill="#c9a84c"/></svg>
+        </div>
+        <span data-i18n="btn_explain">Пояснити цей вірш</span>
+      </div>
+      <!-- TODO: share-as-image frozen until v1.1 — hidden from UI, do not remove markup -->
+      <div class="sheet-btn" id="btnShare" style="display:none">
+        <div class="sheet-btn-ico">
+          <svg width="17" height="17" viewBox="0 0 17 17" fill="none"><circle cx="13" cy="3.5" r="1.8" stroke="#c9a84c" stroke-width="1.2"/><circle cx="3.5" cy="8.5" r="1.8" stroke="#c9a84c" stroke-width="1.2"/><circle cx="13" cy="13.5" r="1.8" stroke="#c9a84c" stroke-width="1.2"/><path d="M5.2 7.6l6-2.4M5.2 9.4l6 2.4" stroke="#c9a84c" stroke-width="1.2"/></svg>
+        </div>
+        <span data-i18n="btn_share">Поділитися</span>
+      </div>
+      <!-- УВАГА: підпис нижче без data-i18n — немає доступу до locale-файлів i18n.
+           Якщо хочеш переклад на інші 6 мов, додай ключ (напр. "btn_copy_text")
+           у кожен locale JSON і постав data-i18n="btn_copy_text" на span нижче. -->
+      <div class="sheet-btn" id="btnCopyText">
+        <div class="sheet-btn-ico">
+          <svg width="17" height="17" viewBox="0 0 17 17" fill="none"><rect x="5.5" y="5.5" width="8" height="9.5" rx="1.3" stroke="#c9a84c" stroke-width="1.2"/><path d="M3.5 11V3.8A1.3 1.3 0 0 1 4.8 2.5H11" stroke="#c9a84c" stroke-width="1.2" stroke-linecap="round"/></svg>
+        </div>
+        <span>Скопіювати текст</span>
+      </div>
+    </div>
+    <div class="ai-panel" id="aiPanel">
+      <div class="ai-answer" id="aiAnswer"></div>
+      <div class="ai-ref" data-i18n="ai_ref">✦ Духовне тлумачення</div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       ПОШУК ВІРША — можна повністю видалити:
+       1) цей div.search-overlay
+       2) кнопку #searchToggleBtn у cat-toggle-wrap вище
+       3) CSS-блок "ПОШУК" у styles.css
+       4) JS-розділ "15. ПОШУК" у app.js
+       ═══════════════════════════════════════════ -->
+  <div class="search-overlay" id="searchOverlay">
+    <div class="search-box">
+      <div class="search-input-row">
+        <svg width="16" height="16" viewBox="0 0 15 15" fill="none">
+          <circle cx="6.2" cy="6.2" r="4.7" stroke="currentColor" stroke-width="1.4"/>
+          <path d="M13 13l-3.2-3.2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+        </svg>
+        <input type="text" id="searchInput" class="search-input" placeholder="Пошук за словом чи посиланням…" autocomplete="off">
+        <div class="search-close" id="searchCloseBtn">✕</div>
+      </div>
+      <div class="search-results" id="searchResults"></div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       ПОДІЛИТИСЯ КАРТИНКОЮ — запасний екран.
+       Показується, тільки якщо нативний Share API
+       не зміг поділитися файлом напряму.
+       Можна видалити разом з JS-розділом "16. ПОДІЛИТИСЯ
+       КАРТИНКОЮ" в app.js та CSS-блоком "КАРТИНКА ВІРША".
+       ═══════════════════════════════════════════ -->
+  <div class="share-img-overlay" id="shareImgOverlay">
+    <div class="share-img-close" id="shareImgClose">✕</div>
+    <img id="shareImgPreview" class="share-img-preview" alt="Вірш">
+    <div class="share-img-hint">Затримайте картинку пальцем, щоб зберегти або переслати</div>
+  </div>
+
+  <div id="toast"></div>
+  <div id="catBanner">
+    <div class="cat-banner-label" data-i18n="cat_banner_label">Нова категорія</div>
+    <div class="cat-banner-name" id="catBannerName"></div>
+  </div>
+
+  <audio id="audioEl" loop playsinline x-webkit-airplay="allow" webkit-playsinline></audio>
+
+  <script>
+    // Прибирає стартовий екран (splash). Викликається з i18n.js,
+    // коли вірші + мовний файл повністю готові й застосунок
+    // фактично можна показувати. Плавне зникнення (.5s), потім
+    // видаляємо з DOM зовсім.
+    function hideSplash() {
+      var el = document.getElementById('splashScreen');
+      if (!el) return;
+      el.classList.add('hide');
+      setTimeout(function () { el.remove(); }, 600);
+    }
+
+    function toggleDonateSpoiler() {
+      var spoiler = document.getElementById('donateSpoiler');
+      var arrow = document.getElementById('donateArrow');
+      if (spoiler.style.display === 'none' || spoiler.style.display === '') {
+        spoiler.style.display = 'block';
+        arrow.style.transform = 'rotate(180deg)';
+      } else {
+        spoiler.style.display = 'none';
+        arrow.style.transform = 'rotate(0deg)';
+      }
+    }
+
+    function toggleAboutSpoiler() {
+      var spoiler = document.getElementById('aboutSpoiler');
+      var arrow = document.getElementById('aboutArrow');
+      if (spoiler.style.display === 'none' || spoiler.style.display === '') {
+        spoiler.style.display = 'block';
+        arrow.style.transform = 'rotate(180deg)';
+      } else {
+        spoiler.style.display = 'none';
+        arrow.style.transform = 'rotate(0deg)';
+      }
+    }
+  </script>
+  <script src="native-bridge.js"></script>
+  <script src="update-checker.js"></script>
+  <script src="i18n.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
