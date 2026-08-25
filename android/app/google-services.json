@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "198412955729",
+    "project_id": "test-project-3c115",
+    "storage_bucket": "test-project-3c115.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:198412955729:android:1a6999b2def315e2070870",
+        "android_client_info": {
+          "package_name": "com.mykboy.holyvibe"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA8rcqL1_EApURYy7jFfqSyy7dUtykAsbs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:198412955729:android:73d64e48b23b7e0a070870",
+        "android_client_info": {
+          "package_name": "com.mykboy.testapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA8rcqL1_EApURYy7jFfqSyy7dUtykAsbs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

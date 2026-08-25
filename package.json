@@ -1,0 +1,27 @@
+{
+  "name": "holy-vibe",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Holy Vibe — prayer app (Capacitor wrapper, Android + iOS)",
+  "scripts": {
+    "sync": "npx cap sync",
+    "android": "npx cap open android",
+    "ios": "npx cap open ios"
+  },
+  "dependencies": {
+    "@capacitor/core": "^8.0.0",
+    "@capacitor/app": "^8.0.0",
+    "@capacitor/local-notifications": "^8.0.0",
+    "@capacitor/share": "^8.0.0",
+    "@capacitor/browser": "^8.0.0",
+    "@capacitor/filesystem": "^8.0.0",
+    "@capgo/capacitor-updater": "latest"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^8.0.0",
+    "@capacitor/android": "^8.0.0",
+    "@capacitor/ios": "^8.0.0",
+    "typescript": "^5.0.0"
+  }
+}

@@ -1,0 +1,46 @@
+name: Build and publish web bundle
+
+# Спрацьовує щоразу, коли змінюється щось у веб-файлах на main.
+# Збирає zip з index.html, app.js, styles.css, verses.json, backgrounds.json,
+# lang/, audio/, assets/bg/ і публікує його як GitHub Release —
+# саме звідси капаситор-плагін на телефонах бере оновлення.
+on:
+  push:
+    branches: [main]
+    paths:
+      - "index.html"
+      - "app.js"
+      - "i18n.js"
+      - "styles.css"
+      - "verses.json"
+      - "backgrounds.json"
+      - "lang/**"
+      - "audio/**"
+      - "assets/bg/**"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  build-zip:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Package web bundle
+        run: |
+          mkdir -p dist
+          cp index.html app.js i18n.js styles.css verses.json backgrounds.json dist/
+          cp -r lang dist/
+          cp -r audio dist/
+          mkdir -p dist/assets
+          cp -r assets/bg dist/assets/
+          cd dist && zip -r ../holy-vibe-web.zip . && cd ..
+
+      - name: Create release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: web-${{ github.run_number }}
+          name: "Web bundle ${{ github.run_number }}"
+          files: holy-vibe-web.zip
