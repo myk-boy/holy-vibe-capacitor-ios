@@ -6,7 +6,6 @@ workflows:
     environment:
       node: latest
       xcode: latest
-      # Вказуємо твій Bundle ID як змінну для зручності
       BUNDLE_ID: "com.mykboy.holyvibe"
     scripts:
       - name: Install Dependencies
