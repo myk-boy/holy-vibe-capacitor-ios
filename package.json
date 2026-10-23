@@ -17,7 +17,7 @@
     "@capacitor/browser": "^8.0.0",
     "@capacitor/filesystem": "^8.0.0",
     "@capacitor-community/firebase-analytics": "^8.1.0",
-    "@capgo/capacitor-updater": "latest"
+    "@capgo/capacitor-updater": "8.51.3"
   },
   "devDependencies": {
     "@capacitor/cli": "^8.0.0",
