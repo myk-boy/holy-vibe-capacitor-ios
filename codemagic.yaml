@@ -13,6 +13,18 @@ workflows:
       - name: Sync Capacitor
         script: |
           npx cap sync ios
+      - name: Add GoogleService-Info.plist to Xcode project
+        script: |
+          test -f ios/App/App/GoogleService-Info.plist || { echo "GoogleService-Info.plist не знайдено"; exit 1; }
+          ruby -e '
+          require "xcodeproj"
+          proj = Xcodeproj::Project.open("ios/App/App.xcodeproj")
+          target = proj.targets.find { |t| t.name == "App" }
+          group = proj.main_group.find_subpath("App", true)
+          ref = group.files.find { |f| f.path == "GoogleService-Info.plist" } || group.new_file("GoogleService-Info.plist")
+          target.add_resources([ref]) unless target.resources_build_phase.files_references.include?(ref)
+          proj.save
+          '
       - name: Build iOS Project (.xcarchive)
         script: |
           cd ios/App
