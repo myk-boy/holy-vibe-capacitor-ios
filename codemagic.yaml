@@ -6,7 +6,6 @@ workflows:
     environment:
       node: latest
       xcode: latest
-      BUNDLE_ID: "com.mykboy.holyvibe"
     scripts:
       - name: Install Dependencies
         script: |
@@ -30,14 +29,13 @@ workflows:
           proj.save
           '
       
-      # --- КРОКИ АВТОМАТИЧНОГО ПІДПИСАННЯ ---
       - name: Initialize keychain
         script: |
           keychain initialize
 
       - name: Fetch signing files from App Store Connect
         script: |
-          app-store-connect fetch-signing-files "$BUNDLE_ID" --type APP_STORE
+          app-store-connect fetch-signing-files "com.mykboy.holyvibe" --type APP_STORE
 
       - name: Add certificates to keychain
         script: |
@@ -47,7 +45,6 @@ workflows:
         script: |
           xcode-project use-profiles
 
-      # --- ЗБІРКА АРХІВУ З ПІДПИСОМ ---
       - name: Build iOS Project (.xcarchive)
         script: |
           cd ios/App
