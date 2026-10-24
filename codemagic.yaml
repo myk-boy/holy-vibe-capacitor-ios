@@ -3,29 +3,34 @@ workflows:
     name: iOS Signed Build (Capacitor SPM)
     max_build_duration: 30
     instance_type: mac_mini_m1
-    
     integrations:
       app_store_connect: Codemagic-AppStore-Key
-
     environment:
-      node: latest
-      xcode: latest
       groups:
         - firebase_ios
-
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.mykboy.holyvibe
+      node: latest
+      xcode: latest
     scripts:
       - name: Install Dependencies
         script: |
           npm install
+
       - name: Sync Capacitor
         script: |
           npx cap sync ios
-      - name: Decode GoogleService-Info.plist
+
+      - name: Put GoogleService-Info.plist in place
         script: |
-          echo $GOOGLE_SERVICES_PLIST | base64 --decode > ios/App/App/GoogleService-Info.plist
+          if [ -n "$GOOGLE_SERVICES_PLIST" ]; then
+            echo "$GOOGLE_SERVICES_PLIST" | base64 --decode > ios/App/App/GoogleService-Info.plist
+          fi
+          test -s ios/App/App/GoogleService-Info.plist || { echo "GoogleService-Info.plist відсутній або порожній"; exit 1; }
+
       - name: Add GoogleService-Info.plist to Xcode project
         script: |
-          test -f ios/App/App/GoogleService-Info.plist || { echo "GoogleService-Info.plist не знайдено"; exit 1; }
           ruby -e '
           require "xcodeproj"
           proj = Xcodeproj::Project.open("ios/App/App.xcodeproj")
@@ -35,33 +40,24 @@ workflows:
           target.add_resources([ref]) unless target.resources_build_phase.files_references.include?(ref)
           proj.save
           '
-      
-      - name: Initialize keychain
-        script: |
-          keychain initialize
 
-      - name: Fetch signing files from App Store Connect
+      - name: Set build number
         script: |
-          app-store-connect fetch-signing-files "com.mykboy.holyvibe" --type APP_STORE
-
-      - name: Add certificates to keychain
-        script: |
-          keychain add-certificates
+          sed -i '' "s/CURRENT_PROJECT_VERSION = [0-9]*;/CURRENT_PROJECT_VERSION = $BUILD_NUMBER;/g" ios/App/App.xcodeproj/project.pbxproj
 
       - name: Set up code signing in Xcode project
         script: |
           xcode-project use-profiles
 
-      - name: Build iOS Project (.xcarchive)
+      - name: Build ipa for distribution
         script: |
-          cd ios/App
-          xcodebuild -project App.xcodeproj \
-                     -scheme App \
-                     -configuration Release \
-                     -sdk iphoneos \
-                     -archivePath $HOME/build/App.xcarchive \
-                     archive \
-                     -allowProvisioningUpdates
-    
+          xcode-project build-ipa --project "ios/App/App.xcodeproj" --scheme "App"
+
     artifacts:
-      - $HOME/build/App.xcarchive
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
