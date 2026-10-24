@@ -3,9 +3,16 @@ workflows:
     name: iOS Signed Build (Capacitor SPM)
     max_build_duration: 30
     instance_type: mac_mini_m1
+    
+    integrations:
+      app_store_connect: Codemagic-AppStore-Key
+
     environment:
       node: latest
       xcode: latest
+      groups:
+        - firebase_ios
+
     scripts:
       - name: Install Dependencies
         script: |
