@@ -8,9 +8,6 @@ workflows:
     environment:
       groups:
         - firebase_ios
-      ios_signing:
-        distribution_type: app_store
-        bundle_identifier: com.mykboy.holyvibe
       node: latest
       xcode: latest
     scripts:
@@ -44,6 +41,18 @@ workflows:
       - name: Set build number
         script: |
           sed -i '' "s/CURRENT_PROJECT_VERSION = [0-9]*;/CURRENT_PROJECT_VERSION = $BUILD_NUMBER;/g" ios/App/App.xcodeproj/project.pbxproj
+
+      - name: Initialize keychain
+        script: |
+          keychain initialize
+
+      - name: Fetch or create signing files
+        script: |
+          app-store-connect fetch-signing-files "com.mykboy.holyvibe" --type IOS_APP_STORE --create
+
+      - name: Add certificates to keychain
+        script: |
+          keychain add-certificates
 
       - name: Set up code signing in Xcode project
         script: |
